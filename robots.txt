@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://arunodhai.github.io/Dr.Shyla-s-Clinic/sitemap.xml
