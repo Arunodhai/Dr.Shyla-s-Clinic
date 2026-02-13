@@ -24,9 +24,10 @@ body {
   font-family: "Manrope", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at 20% 30%, #f3f6e8 0%, transparent 40%),
-    radial-gradient(circle at 80% 70%, #dff0ee 0%, transparent 40%),
-    #e9f3ea;
+    radial-gradient(circle at 14% 22%, rgba(241, 248, 230, 0.75) 0%, rgba(241, 248, 230, 0) 44%),
+    radial-gradient(circle at 88% 20%, rgba(214, 239, 236, 0.75) 0%, rgba(214, 239, 236, 0) 48%),
+    linear-gradient(102deg, #eef4e5 0%, #e6f2e8 36%, #d8eeea 70%, #cfe7e8 100%);
+  background-attachment: fixed;
   line-height: 1.6;
 }
 
