@@ -684,7 +684,20 @@
         <button type="button" class="offer-popup-close" aria-label="Close offer popup" id="offer-popup-close">
           ×
         </button>
+        <button type="button" class="offer-popup-prev" aria-label="Previous offer" id="offer-popup-prev" hidden>
+          <span>›</span>
+        </button>
+        <button type="button" class="offer-popup-next" aria-label="Next offer" id="offer-popup-next" hidden>
+          <span>›</span>
+        </button>
+        <div class="offer-popup-timer-circle" aria-hidden="true">
+          <svg viewBox="0 0 36 36" class="offer-popup-ring">
+            <circle class="offer-ring-bg" cx="18" cy="18" r="15"></circle>
+            <circle class="offer-ring-progress" cx="18" cy="18" r="15" id="offer-popup-progress"></circle>
+          </svg>
+        </div>
         <img
+          id="offer-popup-image"
           src="Offers/photo_2026-02-13%2012.29.24.jpeg"
           alt="Valentine's Day special offer"
           loading="eager"

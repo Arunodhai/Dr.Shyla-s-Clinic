@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Owner Login | Dr. Shyla's Clinic</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/png" href="../images/logo2.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="login-wrap">
+      <section class="login-card">
+        <p class="login-eyebrow">Owner Access</p>
+        <h1>Dr. Shyla Clinic</h1>
+        <p class="login-sub">Login to manage offer banners.</p>
+        <form id="login-form" class="offer-form">
+          <label>
+            Username
+            <input type="text" name="username" autocomplete="username" required />
+          </label>
+          <label>
+            Password
+            <div class="password-wrap">
+              <input
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                required
+                data-password-field
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                data-password-toggle
+                aria-label="Show password"
+                title="Show password"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5c5.5 0 9.7 4.5 10.9 6-1.2 1.5-5.4 6-10.9 6S2.3 12.5 1.1 11C2.3 9.5 6.5 5 12 5zm0 2C8 7 4.7 9.9 3.3 11 4.7 12.1 8 15 12 15s7.3-2.9 8.7-4C19.3 9.9 16 7 12 7zm0 1.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z"/>
+                </svg>
+              </button>
+            </div>
+          </label>
+          <button type="submit">Login</button>
+          <p id="login-message" class="form-message" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="password-toggle.js"></script>
+  </body>
+</html>
