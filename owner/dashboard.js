@@ -32,6 +32,14 @@ if (window.OwnerDashboard) {
       const formMessage = document.getElementById('form-message');
       const clearExpiredBtn = document.getElementById('clear-expired');
       const logoutBtn = document.getElementById('logout-btn');
+      this.confirmModal = document.getElementById('confirm-modal');
+      this.confirmMessageEl = document.getElementById('confirm-message');
+      this.confirmOkBtn = document.getElementById('confirm-ok');
+      this.confirmCancelBtn = document.getElementById('confirm-cancel');
+      if (this.confirmModal) {
+        this.confirmModal.hidden = true;
+        this.confirmModal.setAttribute('aria-hidden', 'true');
+      }
 
       this.setupEventListeners(offerForm, offerList, clearExpiredBtn, logoutBtn);
       this.renderOffers();
@@ -58,6 +66,47 @@ if (window.OwnerDashboard) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+    },
+
+    confirmAction: function (message) {
+      return new Promise((resolve) => {
+        if (!this.confirmModal || !this.confirmMessageEl || !this.confirmOkBtn || !this.confirmCancelBtn) {
+          resolve(false);
+          return;
+        }
+
+        this.confirmMessageEl.textContent = message;
+        this.confirmModal.hidden = false;
+        this.confirmModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+
+        const close = (result) => {
+          this.confirmModal.hidden = true;
+          this.confirmModal.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('modal-open');
+          this.confirmOkBtn.removeEventListener('click', onConfirm);
+          this.confirmCancelBtn.removeEventListener('click', onCancel);
+          this.confirmModal.removeEventListener('click', onBackdropClick);
+          document.removeEventListener('keydown', onKeydown);
+          resolve(result);
+        };
+
+        const onConfirm = () => close(true);
+        const onCancel = () => close(false);
+        const onBackdropClick = (event) => {
+          if (event.target instanceof Element && event.target.closest('[data-confirm-close="true"]')) {
+            close(false);
+          }
+        };
+        const onKeydown = (event) => {
+          if (event.key === 'Escape') close(false);
+        };
+
+        this.confirmOkBtn.addEventListener('click', onConfirm, { once: true });
+        this.confirmCancelBtn.addEventListener('click', onCancel, { once: true });
+        this.confirmModal.addEventListener('click', onBackdropClick);
+        document.addEventListener('keydown', onKeydown);
+      });
     },
 
     getOffers: async function () {
@@ -187,39 +236,40 @@ if (window.OwnerDashboard) {
       // 2. Delete Handler (Scoped strictly to offerList)
       if (offerList) {
         this.handleDelete = async (event) => {
-          const target = event.target;
-          if (!target.classList.contains('offer-delete')) return;
+          const button = event.target instanceof Element
+            ? event.target.closest('.offer-delete')
+            : null;
+          if (!(button instanceof HTMLButtonElement)) return;
 
           event.stopPropagation();
           event.preventDefault();
 
-          if (target.dataset.processing === 'true') return;
+          if (button.dataset.processing === 'true') return;
 
-          const id = target.dataset.id;
+          const id = button.dataset.id;
           if (!id) return;
 
-          if (!confirm('Are you sure you want to delete this offer?')) return;
+          const confirmed = await this.confirmAction('Are you sure you want to delete this offer?');
+          if (!confirmed) return;
 
           try {
-            target.dataset.processing = 'true';
-            target.textContent = 'Deleting...';
-            target.disabled = true;
+            button.dataset.processing = 'true';
+            button.textContent = 'Deleting...';
+            button.disabled = true;
 
             const { error } = await window.supabase.from('offers').delete().eq('id', id);
 
             if (error) throw error;
 
-            // Remove from DOM
-            const item = target.closest('.offer-item');
-            if (item) item.remove();
+            await this.renderOffers();
             this.setMessage('Offer deleted.');
 
           } catch (err) {
             console.error(err);
-            alert('Failed to delete: ' + err.message);
-            target.dataset.processing = 'false';
-            target.textContent = 'Delete';
-            target.disabled = false;
+            this.setMessage('Failed to delete offer: ' + err.message, true);
+            button.dataset.processing = 'false';
+            button.textContent = 'Delete';
+            button.disabled = false;
           }
         };
 
@@ -231,7 +281,8 @@ if (window.OwnerDashboard) {
       // 3. Clear Expired
       if (clearExpiredBtn) {
         clearExpiredBtn.addEventListener('click', async () => {
-          if (!confirm('Delete all expired offers?')) return;
+          const confirmed = await this.confirmAction('Delete all expired offers?');
+          if (!confirmed) return;
           try {
             const today = new Date().toISOString().split('T')[0];
             const { error } = await window.supabase.from('offers').delete().lt('end_date', today);
