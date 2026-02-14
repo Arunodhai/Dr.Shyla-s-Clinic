@@ -88,7 +88,7 @@ if (form) {
 }
 
 if (offerPopup) {
-  const offersStorageKey = 'dr_shyla_offers_v1';
+
   let offerTimer = null;
   let offerProgressTimer = null;
   const offerDuration = 7000;
@@ -110,43 +110,29 @@ if (offerPopup) {
     return `${y}-${m}-${d}`;
   };
 
-  const getActiveOffers = () => {
+  const getActiveOffers = async () => {
+    if (!window.supabase) return [];
+
     const today = toLocalYMD();
-    let offers = [];
-    try {
-      const parsed = JSON.parse(localStorage.getItem(offersStorageKey) || '[]');
-      offers = Array.isArray(parsed) ? parsed : [];
-    } catch {
-      offers = [];
+    const { data: offers, error } = await window.supabase
+      .from('offers')
+      .select('*')
+      .eq('is_active', true)
+      .lte('start_date', today)
+      .gte('end_date', today)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading offers:', error);
+      return [];
     }
 
-    const filtered = offers
-      .filter((offer) => {
-        if (!offer || !offer.imageUrl || !offer.endDate) return false;
-        const start = offer.startDate || offer.endDate;
-        const isActive = offer.isActive !== false;
-        return isActive && start <= today && offer.endDate >= today;
-      })
-      .sort((a, b) => {
-        if (a.endDate !== b.endDate) return b.endDate.localeCompare(a.endDate);
-        return (b.createdAt || 0) - (a.createdAt || 0);
-      })
-      .map((offer) => ({
-        title: offer.title || '',
-        imageData: offer.imageUrl
-      }));
+    if (!offers) return [];
 
-    const unique = [];
-    const seen = new Set();
-    filtered.forEach((offer) => {
-      const key = `${offer.title}::${offer.imageData}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        unique.push(offer);
-      }
-    });
-
-    return unique;
+    return offers.map((offer) => ({
+      title: offer.title || '',
+      imageData: offer.image_url
+    }));
   };
 
   const renderCurrentOffer = () => {
@@ -212,8 +198,8 @@ if (offerPopup) {
     activeOffers = [];
   };
 
-  const showOfferPopup = () => {
-    activeOffers = getActiveOffers();
+  const showOfferPopup = async () => {
+    activeOffers = await getActiveOffers();
     if (!activeOffers.length || !offerPopupImage) return;
     const singleOffer = activeOffers.length <= 1;
     if (offerPopupPrev) offerPopupPrev.hidden = singleOffer;

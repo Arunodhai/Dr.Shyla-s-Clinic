@@ -1,0 +1,2 @@
+const SUPABASE_URL = 'https://folzohiglpmkareskquy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvbHpvaGlnbHBta2FyZXNrcXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMjE1MTUsImV4cCI6MjA4NjU5NzUxNX0.MKoP-J5xhmWsPmiR_zZZ7IKPiYcdJQ27c9x0oMnetsA';

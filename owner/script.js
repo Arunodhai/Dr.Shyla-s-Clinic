@@ -7,27 +7,30 @@ function setLoginMessage(text, isError = false) {
   loginMessage.style.color = isError ? '#8f2b2b' : '#38514a';
 }
 
-(function initLoginPage() {
-  const isLoggedIn = window.ownerAuth?.isAuthenticated?.();
-  if (isLoggedIn) {
-    window.location.replace('/owner/dashboard.html');
-  }
-})();
+// Auto-redirect removed to prevent loop. User must login explicitly.
 
 if (loginForm) {
-  loginForm.addEventListener('submit', (event) => {
+  loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(loginForm);
-    const username = String(formData.get('username') || '').trim();
+    const email = String(formData.get('email') || '').trim();
     const password = String(formData.get('password') || '');
 
-    const result = window.ownerAuth?.login?.(username, password);
-    if (result?.ok) {
-      setLoginMessage('Login successful.');
-      window.location.replace('/owner/dashboard.html');
-      return;
-    }
+    setLoginMessage('Logging in...');
 
-    setLoginMessage(result?.message || 'Invalid username or password.', true);
+    try {
+      const result = await window.ownerAuth.login(email, password);
+
+      if (result && result.ok) {
+        setLoginMessage('Login successful.');
+        window.location.replace('/owner/dashboard.html');
+        return;
+      }
+
+      setLoginMessage(result?.message || 'Invalid email or password.', true);
+    } catch (err) {
+      console.error(err);
+      setLoginMessage('An unexpected error occurred.', true);
+    }
   });
 }
