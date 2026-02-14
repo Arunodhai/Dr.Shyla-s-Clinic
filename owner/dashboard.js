@@ -1,5 +1,5 @@
 if (!window.ownerAuth?.isAuthenticated?.()) {
-  window.location.replace('index.html');
+  window.location.replace('/owner');
 }
 
 const offersStorageKey = 'dr_shyla_offers_v1';
@@ -208,7 +208,7 @@ if (clearExpiredBtn) {
 if (logoutBtn) {
   logoutBtn.addEventListener('click', () => {
     window.ownerAuth?.logout?.();
-    window.location.replace('index.html');
+    window.location.replace('/owner');
   });
 }
 

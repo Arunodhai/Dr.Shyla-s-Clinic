@@ -10,7 +10,7 @@ function setPasswordMessage(text, isError = false) {
 (function initChangePassword() {
   const isLoggedIn = window.ownerAuth?.isAuthenticated?.();
   if (!isLoggedIn) {
-    window.location.replace('index.html');
+    window.location.replace('/owner');
   }
 })();
 

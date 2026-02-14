@@ -10,7 +10,7 @@ function setLoginMessage(text, isError = false) {
 (function initLoginPage() {
   const isLoggedIn = window.ownerAuth?.isAuthenticated?.();
   if (isLoggedIn) {
-    window.location.replace('dashboard.html');
+    window.location.replace('/owner/dashboard.html');
   }
 })();
 
@@ -24,7 +24,7 @@ if (loginForm) {
     const result = window.ownerAuth?.login?.(username, password);
     if (result?.ok) {
       setLoginMessage('Login successful.');
-      window.location.replace('dashboard.html');
+      window.location.replace('/owner/dashboard.html');
       return;
     }
 
