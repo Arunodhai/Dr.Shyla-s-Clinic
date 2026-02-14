@@ -1,215 +1,315 @@
-if (!window.ownerAuth?.isAuthenticated?.()) {
-  window.location.replace('/owner');
-}
+// Dashboard Singleton to prevent multiple initializations
+if (window.OwnerDashboard) {
+  console.log('OwnerDashboard already initialized. Skipping re-init.');
+} else {
+  window.OwnerDashboard = {
+    initialized: false,
 
-const offersStorageKey = 'dr_shyla_offers_v1';
-const offerForm = document.getElementById('offer-form');
-const offerList = document.getElementById('offer-list');
-const formMessage = document.getElementById('form-message');
-const clearExpiredBtn = document.getElementById('clear-expired');
-const logoutBtn = document.getElementById('logout-btn');
+    init: async function () {
+      if (this.initialized) return;
+      this.initialized = true;
 
-function toStartOfDay(dateText) {
-  const parts = String(dateText).split('-').map(Number);
-  if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) return null;
-  const [year, month, day] = parts;
-  const date = new Date(year, month - 1, day, 0, 0, 0, 0);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
+      console.log('Initializing OwnerDashboard...');
 
-function toEndOfDay(dateText) {
-  const parts = String(dateText).split('-').map(Number);
-  if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) return null;
-  const [year, month, day] = parts;
-  const date = new Date(year, month - 1, day, 23, 59, 59, 999);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
+      const offerList = document.getElementById('offer-list');
+      // Only run if we are on the dashboard page
+      if (!offerList) return;
 
-function getOffers() {
-  try {
-    const data = JSON.parse(localStorage.getItem(offersStorageKey) || '[]');
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
+      // Show loading state
+      offerList.innerHTML = '<p class="form-message">Verifying authentication...</p>';
 
-function saveOffers(offers) {
-  localStorage.setItem(offersStorageKey, JSON.stringify(offers));
-}
+      // Small delay to ensure Supabase client is ready
+      await new Promise(r => setTimeout(r, 500));
 
-function getOfferStatus(offer) {
-  const now = new Date();
-  const start = offer.startDate ? toStartOfDay(offer.startDate) : new Date(0);
-  const end = toEndOfDay(offer.endDate);
-  if (!end || !start || offer.isActive === false) return 'Inactive';
-  if (now > end) return 'Expired';
-  if (now < start) return 'Upcoming';
-  return 'Active';
-}
-
-function setMessage(text, isError = false) {
-  if (!formMessage) return;
-  formMessage.textContent = text;
-  formMessage.style.color = isError ? '#8f2b2b' : '#38514a';
-}
-
-function formatDate(dateText) {
-  const d = new Date(`${dateText}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return dateText;
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function escapeHtml(value) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function renderOffers() {
-  if (!offerList) return;
-  const offers = getOffers().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-  if (!offers.length) {
-    offerList.innerHTML = '<p class="form-message">No offers added yet.</p>';
-    return;
-  }
-
-  offerList.innerHTML = offers
-    .map((offer) => {
-      const status = getOfferStatus(offer);
-      const safeTitle = escapeHtml(offer.title || 'Clinic Special Offer');
-      return `
-        <article class="offer-item">
-          <img src="${offer.imageUrl}" alt="${safeTitle}" loading="lazy" />
-          <div class="offer-meta">
-            <h3>${safeTitle}</h3>
-            <p>Display from: <strong>${formatDate(offer.startDate || offer.endDate)}</strong></p>
-            <p>Display until: <strong>${formatDate(offer.endDate)}</strong></p>
-            <p class="${status === 'Expired' ? 'expired' : ''}">${status}</p>
-          </div>
-          <button type="button" class="offer-delete" data-id="${offer.id}">Delete</button>
-        </article>
-      `;
-    })
-    .join('');
-}
-
-function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Failed to read image file.'));
-    reader.readAsDataURL(file);
-  });
-}
-
-function resizeImage(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const maxWidth = 1400;
-      const scale = Math.min(1, maxWidth / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Could not process image.'));
+      // Check auth
+      const { data: { session } } = await window.supabase.auth.getSession();
+      if (!session) {
+        window.location.replace('/owner');
         return;
       }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.82));
-    };
-    img.onerror = () => reject(new Error('Could not load selected image.'));
-    img.src = dataUrl;
-  });
-}
 
-if (offerForm) {
-  offerForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const formData = new FormData(offerForm);
-    const title = String(formData.get('title') || '').trim();
-    const startDate = String(formData.get('start_date') || '').trim();
-    const endDate = String(formData.get('end_date') || '').trim();
-    const file = formData.get('image');
+      const offerForm = document.getElementById('offer-form');
+      const formMessage = document.getElementById('form-message');
+      const clearExpiredBtn = document.getElementById('clear-expired');
+      const logoutBtn = document.getElementById('logout-btn');
+      this.confirmModal = document.getElementById('confirm-modal');
+      this.confirmMessageEl = document.getElementById('confirm-message');
+      this.confirmOkBtn = document.getElementById('confirm-ok');
+      this.confirmCancelBtn = document.getElementById('confirm-cancel');
+      if (this.confirmModal) {
+        this.confirmModal.hidden = true;
+        this.confirmModal.setAttribute('aria-hidden', 'true');
+      }
 
-    if (!(file instanceof File) || !file.name) {
-      setMessage('Please choose an offer image.', true);
-      return;
-    }
-    if (!startDate || !endDate) {
-      setMessage('Please select both offer start and end dates.', true);
-      return;
-    }
+      this.setupEventListeners(offerForm, offerList, clearExpiredBtn, logoutBtn);
+      this.renderOffers();
+    },
 
-    const start = toStartOfDay(startDate);
-    const end = toEndOfDay(endDate);
-    if (!start || !end || start > end) {
-      setMessage('Offer start date must be on or before offer end date.', true);
-      return;
-    }
+    setMessage: function (text, isError = false) {
+      const formMessage = document.getElementById('form-message');
+      if (!formMessage) return;
+      formMessage.textContent = text;
+      formMessage.style.color = isError ? '#8f2b2b' : '#38514a';
+    },
 
-    try {
-      setMessage('Saving offer...');
-      const rawData = await readFileAsDataURL(file);
-      const imageUrl = await resizeImage(rawData);
-      const offers = getOffers();
-      offers.push({
-        id: `offer_${Date.now()}`,
-        title,
-        startDate,
-        endDate,
-        imageUrl,
-        isActive: true,
-        createdAt: Date.now()
+    formatDate: function (dateText) {
+      if (!dateText) return '';
+      const d = new Date(dateText);
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    },
+
+    escapeHtml: function (value) {
+      if (!value) return '';
+      return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    },
+
+    confirmAction: function (message) {
+      return new Promise((resolve) => {
+        if (!this.confirmModal || !this.confirmMessageEl || !this.confirmOkBtn || !this.confirmCancelBtn) {
+          resolve(false);
+          return;
+        }
+
+        this.confirmMessageEl.textContent = message;
+        this.confirmModal.hidden = false;
+        this.confirmModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+
+        const close = (result) => {
+          this.confirmModal.hidden = true;
+          this.confirmModal.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('modal-open');
+          this.confirmOkBtn.removeEventListener('click', onConfirm);
+          this.confirmCancelBtn.removeEventListener('click', onCancel);
+          this.confirmModal.removeEventListener('click', onBackdropClick);
+          document.removeEventListener('keydown', onKeydown);
+          resolve(result);
+        };
+
+        const onConfirm = () => close(true);
+        const onCancel = () => close(false);
+        const onBackdropClick = (event) => {
+          if (event.target instanceof Element && event.target.closest('[data-confirm-close="true"]')) {
+            close(false);
+          }
+        };
+        const onKeydown = (event) => {
+          if (event.key === 'Escape') close(false);
+        };
+
+        this.confirmOkBtn.addEventListener('click', onConfirm, { once: true });
+        this.confirmCancelBtn.addEventListener('click', onCancel, { once: true });
+        this.confirmModal.addEventListener('click', onBackdropClick);
+        document.addEventListener('keydown', onKeydown);
       });
-      saveOffers(offers);
-      offerForm.reset();
-      setMessage('Offer added successfully.');
-      renderOffers();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not save offer.', true);
+    },
+
+    getOffers: async function () {
+      const { data, error } = await window.supabase
+        .from('offers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching offers:', error);
+        return [];
+      }
+      return data;
+    },
+
+    getOfferStatus: function (offer) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startDate = offer.start_date ? new Date(offer.start_date) : null;
+      const endDate = offer.end_date ? new Date(offer.end_date) : null;
+
+      if (!offer.is_active) return 'Inactive';
+      if (endDate && today > endDate) return 'Expired';
+      if (startDate && today < startDate) return 'Upcoming';
+      return 'Active';
+    },
+
+    renderOffers: async function () {
+      const offerList = document.getElementById('offer-list');
+      if (!offerList) return;
+
+      const offers = await this.getOffers();
+
+      if (!offers.length) {
+        offerList.innerHTML = '<p class="form-message">No offers added yet.</p>';
+        return;
+      }
+
+      offerList.innerHTML = offers
+        .map((offer) => {
+          const safeTitle = this.escapeHtml(offer.title || 'Clinic Special Offer');
+          const status = this.getOfferStatus(offer);
+          return `
+            <article class="offer-item">
+              <img src="${offer.image_url}" alt="${safeTitle}" loading="lazy" />
+              <div class="offer-meta">
+                <h3>${safeTitle}</h3>
+                <p>Display from: <strong>${this.formatDate(offer.start_date)}</strong></p>
+                <p>Display until: <strong>${this.formatDate(offer.end_date)}</strong></p>
+                <p class="${status === 'Expired' ? 'expired' : ''}">${status}</p>
+              </div>
+              <button type="button" class="offer-delete" data-id="${offer.id}">Delete</button>
+            </article>
+          `;
+        })
+        .join('');
+    },
+
+    setupEventListeners: function (offerForm, offerList, clearExpiredBtn, logoutBtn) {
+      // 1. Offer Submission
+      if (offerForm) {
+        offerForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const formData = new FormData(offerForm);
+          const title = String(formData.get('title') || '').trim();
+          const startDate = String(formData.get('start_date') || '').trim();
+          const endDate = String(formData.get('end_date') || '').trim();
+          const file = formData.get('image');
+
+          if (!(file instanceof File) || !file.name) {
+            this.setMessage('Please choose an offer image.', true);
+            return;
+          }
+          if (!startDate || !endDate) {
+            this.setMessage('Please select both offer start and end dates.', true);
+            return;
+          }
+
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+
+          if (start > end) {
+            this.setMessage('Offer start date must be on or before offer end date.', true);
+            return;
+          }
+
+          try {
+            this.setMessage('Uploading image...');
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}.${fileExt}`;
+
+            const { error: uploadError } = await window.supabase.storage
+              .from('offer-images')
+              .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = window.supabase.storage
+              .from('offer-images')
+              .getPublicUrl(fileName);
+
+            this.setMessage('Saving offer details...');
+
+            const { error: insertError } = await window.supabase
+              .from('offers')
+              .insert({
+                title,
+                start_date: startDate,
+                end_date: endDate,
+                image_url: publicUrl,
+                is_active: true
+              });
+
+            if (insertError) throw insertError;
+
+            offerForm.reset();
+            this.setMessage('Offer added successfully.');
+            this.renderOffers();
+
+          } catch (error) {
+            console.error(error);
+            this.setMessage(error.message || 'Could not save offer.', true);
+          }
+        });
+      }
+
+      // 2. Delete Handler (Scoped strictly to offerList)
+      if (offerList) {
+        this.handleDelete = async (event) => {
+          const button = event.target instanceof Element
+            ? event.target.closest('.offer-delete')
+            : null;
+          if (!(button instanceof HTMLButtonElement)) return;
+
+          event.stopPropagation();
+          event.preventDefault();
+
+          if (button.dataset.processing === 'true') return;
+
+          const id = button.dataset.id;
+          if (!id) return;
+
+          const confirmed = await this.confirmAction('Are you sure you want to delete this offer?');
+          if (!confirmed) return;
+
+          try {
+            button.dataset.processing = 'true';
+            button.textContent = 'Deleting...';
+            button.disabled = true;
+
+            const { error } = await window.supabase.from('offers').delete().eq('id', id);
+
+            if (error) throw error;
+
+            await this.renderOffers();
+            this.setMessage('Offer deleted.');
+
+          } catch (err) {
+            console.error(err);
+            this.setMessage('Failed to delete offer: ' + err.message, true);
+            button.dataset.processing = 'false';
+            button.textContent = 'Delete';
+            button.disabled = false;
+          }
+        };
+
+        // Remove old if any (though singleton prevents this, it's good practice)
+        offerList.removeEventListener('click', this.handleDelete);
+        offerList.addEventListener('click', this.handleDelete);
+      }
+
+      // 3. Clear Expired
+      if (clearExpiredBtn) {
+        clearExpiredBtn.addEventListener('click', async () => {
+          const confirmed = await this.confirmAction('Delete all expired offers?');
+          if (!confirmed) return;
+          try {
+            const today = new Date().toISOString().split('T')[0];
+            const { error } = await window.supabase.from('offers').delete().lt('end_date', today);
+            if (error) throw error;
+            this.renderOffers();
+            this.setMessage('Expired offers removed.');
+          } catch (err) {
+            console.error(err);
+            this.setMessage('Failed to delete expired offers.', true);
+          }
+        });
+      }
+
+      // 4. Logout
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+          await window.ownerAuth.logout();
+          window.location.replace('/owner');
+        });
+      }
     }
-  });
+  };
+
+  // Run the singleton init
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => window.OwnerDashboard.init());
+  } else {
+    window.OwnerDashboard.init();
+  }
 }
-
-if (offerList) {
-  offerList.addEventListener('click', (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLButtonElement)) return;
-    const id = target.dataset.id;
-    if (!id) return;
-
-    const offers = getOffers().filter((offer) => offer.id !== id);
-    saveOffers(offers);
-    renderOffers();
-    setMessage('Offer deleted.');
-  });
-}
-
-if (clearExpiredBtn) {
-  clearExpiredBtn.addEventListener('click', () => {
-    const now = new Date();
-    const offers = getOffers().filter((offer) => {
-      const end = toEndOfDay(offer.endDate);
-      return end && now <= end;
-    });
-    saveOffers(offers);
-    renderOffers();
-    setMessage('Expired offers removed.');
-  });
-}
-
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    window.ownerAuth?.logout?.();
-    window.location.replace('/owner');
-  });
-}
-
-renderOffers();

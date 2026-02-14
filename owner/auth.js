@@ -1,59 +1,58 @@
 (function setupOwnerAuth() {
-  const authStorageKey = 'dr_shyla_owner_auth_v1';
-  const authSessionKey = 'dr_shyla_owner_session_v1';
-  const defaultOwnerUsername = 'drshylaclinic';
-  const defaultOwnerPassword = 'drshyla@123';
-
-  function getAuth() {
-    try {
-      const auth = JSON.parse(localStorage.getItem(authStorageKey) || '{}');
-      if (typeof auth.username === 'string' && typeof auth.password === 'string') {
-        return auth;
-      }
-    } catch {}
-    return { username: defaultOwnerUsername, password: defaultOwnerPassword };
+  async function isAuthenticated() {
+    if (!window.supabase) return false;
+    // Force a fresh session check from server to be sure
+    const { data, error } = await window.supabase.auth.getSession();
+    if (error || !data.session) return false;
+    return true;
   }
 
-  function saveAuth(auth) {
-    localStorage.setItem(authStorageKey, JSON.stringify(auth));
+  async function login(email, password) {
+    if (!window.supabase) return { ok: false, message: 'Supabase not initialized.' };
+    const { data, error } = await window.supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+    return { ok: true, data };
   }
 
-  function ensureAuthSetup() {
-    if (!localStorage.getItem(authStorageKey)) {
-      saveAuth({ username: defaultOwnerUsername, password: defaultOwnerPassword });
+  async function logout() {
+    if (window.supabase) {
+      await window.supabase.auth.signOut();
     }
   }
 
-  function isAuthenticated() {
-    return sessionStorage.getItem(authSessionKey) === '1';
-  }
+  // Update password functionality 
+  async function updatePassword(currentPassword, newPassword) {
+    if (!window.supabase) return { ok: false, message: 'Supabase not initialized.' };
 
-  function login(username, password) {
-    const auth = getAuth();
-    if (username === auth.username && password === auth.password) {
-      sessionStorage.setItem(authSessionKey, '1');
-      return { ok: true };
-    }
-    return { ok: false, message: 'Invalid username or password.' };
-  }
+    // 1. Get current user email
+    const { data: { user } } = await window.supabase.auth.getUser();
+    if (!user || !user.email) return { ok: false, message: 'User verification failed.' };
 
-  function logout() {
-    sessionStorage.removeItem(authSessionKey);
-  }
+    // 2. Verify current password by re-authenticating
+    const { error: signInError } = await window.supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword
+    });
 
-  function updatePassword(currentPassword, newPassword) {
-    const auth = getAuth();
-    if (auth.password !== currentPassword) {
+    if (signInError) {
       return { ok: false, message: 'Current password is incorrect.' };
     }
-    if (newPassword.length < 6) {
-      return { ok: false, message: 'New password must be at least 6 characters.' };
+
+    // 3. If verified, update to new password
+    const { error } = await window.supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
     }
-    saveAuth({ username: auth.username, password: newPassword });
     return { ok: true, message: 'Password updated successfully.' };
   }
-
-  ensureAuthSetup();
 
   window.ownerAuth = {
     isAuthenticated,

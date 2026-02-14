@@ -7,15 +7,15 @@ function setPasswordMessage(text, isError = false) {
   passwordMessage.style.color = isError ? '#8f2b2b' : '#38514a';
 }
 
-(function initChangePassword() {
-  const isLoggedIn = window.ownerAuth?.isAuthenticated?.();
-  if (!isLoggedIn) {
+(async function initChangePassword() {
+  const { data: { session } } = await window.supabase.auth.getSession();
+  if (!session) {
     window.location.replace('/owner');
   }
 })();
 
 if (passwordForm) {
-  passwordForm.addEventListener('submit', (event) => {
+  passwordForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(passwordForm);
     const currentPassword = String(formData.get('current_password') || '');
@@ -27,13 +27,24 @@ if (passwordForm) {
       return;
     }
 
-    const result = window.ownerAuth?.updatePassword?.(currentPassword, newPassword);
-    if (!result?.ok) {
-      setPasswordMessage(result?.message || 'Could not update password.', true);
+    if (newPassword.length < 6) {
+      setPasswordMessage('Password must be at least 6 characters.', true);
       return;
     }
 
-    passwordForm.reset();
-    setPasswordMessage(result.message);
+    setPasswordMessage('Verifying and updating password...');
+
+    try {
+      const result = await window.ownerAuth.updatePassword(currentPassword, newPassword);
+      if (result && result.ok) {
+        passwordForm.reset();
+        setPasswordMessage('Password updated successfully.');
+      } else {
+        setPasswordMessage(result?.message || 'Could not update password.', true);
+      }
+    } catch (err) {
+      console.error(err);
+      setPasswordMessage('An unexpected error occurred.', true);
+    }
   });
 }

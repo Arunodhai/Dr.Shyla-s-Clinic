@@ -1,61 +1,79 @@
 <!DOCTYPE html>
 <html lang="en-IN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Offer Dashboard | Dr. Shyla's Clinic</title>
-    <meta name="robots" content="noindex, nofollow" />
-    <link rel="icon" type="image/png" href="/images/logo2.png" />
-    <link rel="stylesheet" href="/owner/styles.css" />
-  </head>
-  <body>
-    <main class="owner-wrap">
-      <header class="owner-head dashboard-nav">
-        <a href="/owner/dashboard.html" class="dashboard-brand">
-          <img src="/images/logo2.png" alt="Dr. Shyla logo" />
-          <span>Offer Dashboard <em>Dr. Shyla's Clinic</em></span>
-        </a>
-        <nav class="dashboard-actions" aria-label="Owner Navigation">
-          <a href="/index.html" class="dashboard-chip">Open Website</a>
-          <a href="/owner/change-password.html" class="dashboard-chip">Change Password</a>
-          <button type="button" id="logout-btn" class="dashboard-chip dashboard-chip-cta">Logout</button>
-        </nav>
-      </header>
 
-      <section class="owner-card">
-        <h2>Add New Offer</h2>
-        <form id="offer-form" class="offer-form">
-          <label>
-            Offer title (optional)
-            <input type="text" name="title" placeholder="Example: Valentine Special" />
-          </label>
-          <label>
-            Offer image
-            <input type="file" name="image" accept="image/*" required />
-          </label>
-          <label>
-            Offer start date
-            <input type="date" name="start_date" required />
-          </label>
-          <label>
-            Offer end date
-            <input type="date" name="end_date" required />
-          </label>
-          <button type="submit">Add Offer</button>
-          <p id="form-message" class="form-message" aria-live="polite"></p>
-        </form>
-      </section>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offer Dashboard | Dr. Shyla's Clinic</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/png" href="/images/logo2.png" />
+  <link rel="stylesheet" href="/owner/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+  <script src="../supabase-client.js"></script>
+</head>
 
-      <section class="owner-card">
-        <div class="offer-list-head">
-          <h2>Saved Offers</h2>
-          <button id="clear-expired" type="button" class="btn-secondary">Delete Expired</button>
-        </div>
-        <div id="offer-list" class="offer-list"></div>
-      </section>
-    </main>
+<body>
+  <main class="owner-wrap">
+    <header class="owner-head dashboard-nav">
+      <a href="/owner/dashboard.html" class="dashboard-brand">
+        <img src="/images/logo2.png" alt="Dr. Shyla logo" />
+        <span>Offer Dashboard <em>Dr. Shyla's Clinic</em></span>
+      </a>
+      <nav class="dashboard-actions" aria-label="Owner Navigation">
+        <a href="/index.html" class="dashboard-chip">Open Website</a>
+        <a href="/owner/change-password.html" class="dashboard-chip">Change Password</a>
+        <button type="button" id="logout-btn" class="dashboard-chip dashboard-chip-cta">Logout</button>
+      </nav>
+    </header>
 
-    <script src="/owner/auth.js"></script>
-    <script src="/owner/dashboard.js"></script>
-  </body>
+    <section class="owner-card">
+      <h2>Add New Offer</h2>
+      <form id="offer-form" class="offer-form">
+        <label>
+          Offer title (optional)
+          <input type="text" name="title" placeholder="Example: Valentine Special" />
+        </label>
+        <label>
+          Offer image
+          <input type="file" name="image" accept="image/*" required />
+        </label>
+        <label>
+          Offer start date
+          <input type="date" name="start_date" required />
+        </label>
+        <label>
+          Offer end date
+          <input type="date" name="end_date" required />
+        </label>
+        <button type="submit">Add Offer</button>
+        <p id="form-message" class="form-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="owner-card">
+      <div class="offer-list-head">
+        <h2>Saved Offers</h2>
+        <button id="clear-expired" type="button" class="btn-secondary">Delete Expired</button>
+      </div>
+      <div id="offer-list" class="offer-list"></div>
+    </section>
+  </main>
+
+  <div class="confirm-modal" id="confirm-modal" aria-hidden="true" hidden>
+    <div class="confirm-backdrop" data-confirm-close="true"></div>
+    <article class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h3 id="confirm-title">Confirm Action</h3>
+      <p id="confirm-message">Are you sure?</p>
+      <div class="confirm-actions">
+        <button type="button" class="btn-secondary confirm-cancel" id="confirm-cancel">Cancel</button>
+        <button type="button" class="confirm-danger" id="confirm-ok">Delete</button>
+      </div>
+    </article>
+  </div>
+
+  <script src="/owner/auth.js"></script>
+  <script src="/owner/dashboard.js"></script>
+</body>
+
 </html>
